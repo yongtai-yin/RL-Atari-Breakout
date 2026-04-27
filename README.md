@@ -25,6 +25,8 @@ Final results are summarized from `results/comparison_report.json`.
 
 In this experimental setting, PPO outperformed DQN by `127.35` mean evaluation points across seeds.
 
+![Final performance comparison](results/final_performance.png)
+
 Per-seed evaluation results:
 
 | Algorithm | Seed | Evaluation policy | Mean | Std | Median | Min | Max |
@@ -35,6 +37,10 @@ Per-seed evaluation results:
 | DQN | 0 | epsilon-greedy, eps=0.05 | 214.68 | 137.61 | 198.5 | 21 | 418 |
 | DQN | 100 | epsilon-greedy, eps=0.05 | 218.26 | 131.96 | 222.0 | 10 | 412 |
 | DQN | 200 | epsilon-greedy, eps=0.05 | 268.32 | 128.84 | 323.0 | 29 | 434 |
+
+![Learning curves](results/learning_curves.png)
+
+![Sample efficiency comparison](results/sample_efficiency.png)
 
 ## Repository Layout
 

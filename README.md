@@ -46,10 +46,7 @@ PPO-Breakout/
 ├── compare.py        # TensorBoard/evaluation parsing and figure/report generation
 ├── utils.py          # Environment creation, preprocessing, and shared helpers
 ├── requirements.txt  # Python dependencies
-├── README.md         # Chinese documentation
-├── README_E.md       # English documentation
-├── REPORT.md         # Detailed experiment report
-├── RECORD.md         # Development and debugging record
+├── README.md         # Documentation
 ├── models/           # Generated model checkpoints, ignored by git
 ├── logs/             # Generated TensorBoard logs, ignored by git
 ├── results/          # Generated evaluation files and plots, ignored by git

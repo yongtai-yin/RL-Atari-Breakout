@@ -195,5 +195,3 @@ When multiple DQN evaluation JSON files exist for the same seed, `compare.py` pr
 
 - The results are specific to the implementation, hyperparameters, training budget, seeds, and Breakout preprocessing used here.
 - Large generated artifacts are ignored by git. Re-run training/evaluation to regenerate them.
-- `REPORT.md` contains the detailed technical experiment record and final result tables.
-

@@ -12,7 +12,7 @@ The project compares PPO and DQN under a shared Atari preprocessing pipeline:
 - Evaluation: 100 episodes per final model
 - Comparison dimensions: final score, learning curve, sample efficiency, and training stability
 
-Generated artifacts such as models, TensorBoard logs, evaluation JSON files, figures, and videos are ignored by git by default.
+Large generated artifacts such as models, TensorBoard logs, videos, and raw evaluation files are ignored by git by default. The final PNG figures can be tracked separately if they should be displayed on GitHub.
 
 ## Final Results
 
@@ -40,6 +40,13 @@ Per-seed evaluation results:
 | DQN | 100 | epsilon-greedy, eps=0.05 | 218.26 | 131.96 | 222.0 | 10 | 412 |
 | DQN | 200 | epsilon-greedy, eps=0.05 | 268.32 | 128.84 | 323.0 | 29 | 434 |
 
+Key observations:
+
+- PPO achieved higher mean evaluation score than DQN for every training seed.
+- PPO also had lower cross-seed variation in final mean score: `10.97` for PPO vs `24.49` for DQN.
+- DQN showed larger within-seed evaluation variance, with per-seed score standard deviations around `128.84` to `137.61`.
+- PPO seed 0 reached a maximum score of `859`, which is a valid Atari Breakout score and was retained as a legitimate evaluation outcome.
+
 <p align="center">
   <img src="results/learning_curves.png" alt="Learning curves" width="60%">
 </p>
@@ -47,6 +54,23 @@ Per-seed evaluation results:
 <p align="center">
   <img src="results/sample_efficiency.png" alt="Sample efficiency comparison" width="60%">
 </p>
+
+Mean training reward near fixed sample-efficiency milestones:
+
+| Algorithm | 1M | 5M | 10M | 15M | 20M |
+|---|---:|---:|---:|---:|---:|
+| PPO | 25.65 | 216.39 | 357.03 | 363.77 | 380.67 |
+| DQN | 8.36 | 103.03 | 281.01 | 312.22 | 352.40 |
+
+Training stability summary from TensorBoard reward series:
+
+| Metric | PPO | DQN |
+|---|---:|---:|
+| reward variance | 12696.54 | 18241.13 |
+| reward std | 112.66 | 134.88 |
+| mean rolling std | 8.23 | 4.99 |
+| max rolling std | 38.09 | 26.47 |
+| smoothness | 0.189 | 0.096 |
 
 ## Repository Layout
 
@@ -58,7 +82,7 @@ PPO-Breakout/
 ├── compare.py        # TensorBoard/evaluation parsing and figure/report generation
 ├── utils.py          # Environment creation, preprocessing, and shared helpers
 ├── requirements.txt  # Python dependencies
-├── README.md         # Documentation
+├── README.md         # Project documentation
 ├── models/           # Generated model checkpoints, ignored by git
 ├── logs/             # Generated TensorBoard logs, ignored by git
 ├── results/          # Generated evaluation files and plots, ignored by git
@@ -73,10 +97,11 @@ Python 3.12 and a CUDA-enabled PyTorch build are recommended.
 conda create -n breakout python=3.12 -y
 conda activate breakout
 
-pip3 install torch --index-url https://download.pytorch.org/whl/cu126
-pip install -r requirements.txt
+pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu126
 AutoROM --accept-license
 ```
+
+The extra PyTorch index is required because `requirements.txt` pins a CUDA PyTorch build (`torch==2.11.0+cu126`), which may not be resolvable from the default PyPI index alone.
 
 The final environment used:
 
@@ -105,6 +130,37 @@ Evaluation wrappers:
 
 Evaluation uses reproducible reset seeds by default. With `--seed 0`, episode `i` is reset with seed `0 + i`.
 
+## Algorithm Configuration
+
+PPO uses Stable-Baselines3 `CnnPolicy` with the following main hyperparameters:
+
+| Parameter | Value |
+|---|---:|
+| learning_rate | 2.5e-4 |
+| n_steps | 128 |
+| batch_size | 256 |
+| n_epochs | 4 |
+| gamma | 0.99 |
+| gae_lambda | 0.95 |
+| clip_range | 0.1 |
+| ent_coef | 0.01 |
+| parallel environments | 8 |
+
+DQN uses Stable-Baselines3 `CnnPolicy` with the following main hyperparameters:
+
+| Parameter | Value |
+|---|---:|
+| learning_rate | 1e-4 |
+| buffer_size | 100000 |
+| learning_starts | 10000 |
+| batch_size | 32 |
+| gamma | 0.99 |
+| train_freq | 4 |
+| gradient_steps | 1 |
+| target_update_interval | 10000 |
+| exploration_fraction | 0.1 |
+| exploration_final_eps | 0.01 |
+
 ## Training
 
 Train one PPO and one DQN model:
@@ -117,6 +173,18 @@ python train.py --algo dqn --seed 0 --steps 20000000 --envs 8
 ```
 
 The full experiment uses seeds `0, 100, 200`.
+
+Example commands for the full experiment:
+
+```shell
+python train.py --algo ppo --seed 0 --steps 20000000 --envs 8
+python train.py --algo ppo --seed 100 --steps 20000000 --envs 8
+python train.py --algo ppo --seed 200 --steps 20000000 --envs 8
+
+python train.py --algo dqn --seed 0 --steps 20000000 --envs 8
+python train.py --algo dqn --seed 100 --steps 20000000 --envs 8
+python train.py --algo dqn --seed 200 --steps 20000000 --envs 8
+```
 
 Checkpoint and final model outputs:
 
@@ -161,6 +229,13 @@ python evaluate.py --model models/dqn/dqn_breakout_seed0_final.zip --episodes 10
 
 The evaluation JSON records scores, step counts, policy settings, and best-video metadata.
 
+Default evaluation outputs are named with algorithm, model seed, evaluation seed, and policy tag. Examples:
+
+```text
+results/ppo_seed100_evalseed0_auto_evaluation.json
+results/dqn_seed100_evalseed0_epsilon-greedy-eps0p05_evaluation.json
+```
+
 ## Visualization
 
 ```shell
@@ -194,4 +269,6 @@ When multiple DQN evaluation JSON files exist for the same seed, `compare.py` pr
 ## Notes
 
 - The results are specific to the implementation, hyperparameters, training budget, seeds, and Breakout preprocessing used here.
-- Large generated artifacts are ignored by git. Re-run training/evaluation to regenerate them.
+- Large generated artifacts are ignored by git by default. Re-run training/evaluation to regenerate models, logs, videos, and JSON results.
+- The figure links in this README assume the generated PNG files under `results/` are included in the repository. If `results/` is kept ignored, the figures should be copied into a tracked documentation path or force-added explicitly.
+- The reported results are implementation-specific and should not be interpreted as a general PPO-vs-DQN conclusion across all Atari games.
